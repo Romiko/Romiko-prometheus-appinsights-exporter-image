@@ -6,9 +6,11 @@ customCollectors:
           customdimensions:
             - 'Kubernetes.ReplicaSet.Name'
             - 'AspNetCoreEnvironment'
+            - 'Kubernetes.Deployment.Name'
         - query: 'where resultCode startswith "4" or resultCode startswith "5"'
           schema: 'requests'
           name: 'requests_failed_total'
           customdimensions:
             - 'Kubernetes.ReplicaSet.Name'
             - 'AspNetCoreEnvironment'
+            - 'Kubernetes.Deployment.Name'
