@@ -1,7 +1,7 @@
 <!-- Because this file contains custom formatting for the heading, we need to
     disable some of the markdownlint rules -->
 <!-- markdownlint-disable -->
-<p align=center><img src="./docs/media/logos/promitor.png" alt="Promitor Logo" height="150"></p>
+<p align=center><img src="./docs/media/logos/rangerrom.png" alt="RangerRom Logo" height="150"></p>
 
 <h1 align="center">Bringing Azure ApplicationInsight metrics to Prometheus.</h1>
 
