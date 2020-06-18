@@ -1,0 +1,14 @@
+customCollectors:
+    servicelevelindicators:
+        - query: 'where resultCode startswith "2" or resultCode startswith "3"'
+          schema: 'requests'
+          name: 'requests_success_total'
+          customdimensions:
+            - 'Kubernetes.ReplicaSet.Name'
+            - 'AspNetCoreEnvironment'
+        - query: 'where resultCode startswith "4" or resultCode startswith "5"'
+          schema: 'requests'
+          name: 'requests_failed_total'
+          customdimensions:
+            - 'Kubernetes.ReplicaSet.Name'
+            - 'AspNetCoreEnvironment'
