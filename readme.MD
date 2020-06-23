@@ -25,6 +25,7 @@ docker run -d -p 8999:8080  --name prom-appinsights-exporter \
 ## Kubernetes
 
 There is a helm chart in my repo that you can use to deploy this to kubernetes.
+git@github.com:Romiko/helm-charts.git
 
 ```
 helm repo add  romiko https://romiko.github.io/helm-charts
