@@ -24,4 +24,19 @@ docker run -d -p 8999:8080  --name prom-appinsights-exporter \
 
 ## Kubernetes
 
-TBA
+There is a helm chart in my repo that you can use to deploy this to kubernetes.
+
+```
+helm repo add  romiko https://romiko.github.io/helm-charts
+helm install romiko/prometheus-appinsights-exporter
+```
+
+## Prometheus AppInsights Exporter
+This chart will allow you to export metrics from Azure AppInsights into Prometheus.
+
+* Download the chart.
+* Update the values.yaml file
+* Setup your queries in the files/queries.yaml
+
+
+<p align=center><img src="./docs/media/Kubernetes Deployment.png" alt="ArgoCD K8 Deployment View for Prometheus Exporter" height="150"></p>
