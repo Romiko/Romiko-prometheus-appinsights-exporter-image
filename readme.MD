@@ -41,3 +41,11 @@ This chart will allow you to export metrics from Azure AppInsights into Promethe
 
 
 <p align=center><img src="./docs/media/Kubernetes Deployment.png" alt="ArgoCD K8 Deployment View for Prometheus Exporter" height="150"></p>
+
+##Why
+You can use this to export metrics to Prometheus. Using a SLO operator you can then monitor service compliance for application specific logic e.g. Failed Transations etc
+This is the fundamentals of Site Reliability Engineering regarding metrics. Define your SLAs -> SLOs -> SLIs
+
+<p align=center><img src="./docs/media/servicecompliance.png" alt="service compliance SLO SLA SLI" height="150"></p>
+
+
