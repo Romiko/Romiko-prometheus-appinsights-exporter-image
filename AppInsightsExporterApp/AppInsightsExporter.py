@@ -1,96 +1,100 @@
-import argparse
 import logging
-import json
 import os
-import requests
 import sys
 import time
 import yaml
 import pyfiglet
+import json_log_formatter
 
-from logging.handlers import RotatingFileHandler
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
+from collector.app_insights_custom_collector import AppInsightsCustomCollector
 
-from collector.AppInsightsCollector import AppInsightsCollector
-from collector.AppInsightsCustomCollector import AppInsightsCustomCollector
+CONFIG_FILE_QUERY_PATH = "/config/queries.yaml"
 
-CONFIG_FILE_QUERY_PATH="/config/queries.yaml"
 
 def configure_logging(log_conf_level):
+    """[summary]
+
+    Args:
+        log_conf_level ([type]): Set the logging level
+
+    Returns:
+        [type]: [description]
+    """
     if log_conf_level == 'critical':
-        log_level = logging.CRITICAL
+        level = logging.CRITICAL
     elif log_conf_level == 'error':
-        log_level = logging.ERROR
+        level = logging.ERROR
     elif log_conf_level == 'warning':
-        log_level = logging.WARNING
+        level = logging.WARNING
     elif log_conf_level == 'debug':
-        log_level = logging.DEBUG
+        level = logging.DEBUG
     else:
-        log_level = logging.INFO
+        level = logging.INFO
 
-    my_formatter = logging.Formatter('[AppInsightsMetricsExporter] %(asctime)s %(levelname)-7.7s %(message)s')
+    formatter = json_log_formatter.JSONFormatter()
     handler = logging.StreamHandler(sys.stdout)
-    handler.setFormatter(my_formatter)
-    handler.setLevel(log_level)
+    handler.setFormatter(formatter)
+    handler.setLevel(level)
 
-    logger = logging.getLogger()
-    logger.setLevel(log_level)
-    logger.addHandler(handler)
+    log = logging.getLogger()
+    log.setLevel(level)
+    log.addHandler(handler)
+    return log
 
-    return True
 
-def getCollectorCustomDimensions(configuration):
+def get_custom_dimensions(conf):
     customdimensions = []
-    if 'customdimensions' in configuration:
-        customdimensions = configuration['customdimensions']
+    if 'customdimensions' in conf:
+        customdimensions = conf['customdimensions']
     return customdimensions
+
 
 if __name__ == "__main__":
     ascii_banner = pyfiglet.figlet_format("Appinsights Prometheus Exporter")
     print(ascii_banner)
-    print(pyfiglet.figlet_format("http://romikoderbynew.com", font = "digital" ) )
-    
-    try:  
+
+    try:
         key = os.environ['AZURE_APP_INSIGHTS_KEY']
         appid = os.environ['AZURE_APP_INSIGHTS_APP_ID']
         log_level = os.environ['LOG_LEVEL']
         if "QUERY_FILE" in os.environ:
-            configuration_file = os.environ['QUERY_FILE']
+            CONFIG_FILE = os.environ['QUERY_FILE']
         else:
-            configuration_file = CONFIG_FILE_QUERY_PATH
-    except KeyError as e: 
-        msg = """Please set the environment variables:
-        AZURE_APP_INSIGHTS_KEY - The Azure Application Insights Key 
+            CONFIG_FILE = CONFIG_FILE_QUERY_PATH
+    except KeyError as exception:
+        MSG = """Please set the environment variables:
+        AZURE_APP_INSIGHTS_KEY - The Azure Application Insights Key
         AZURE_APP_INSIGHTS_APP_ID - The Azure Application Insights App Id
         LOG_LEVEL - Log Level critical|warning|error|debug|info
-        QUERY_FILE - The full path to the configuration file containing the queries"""
-        print(msg)
-        print("ERROR: Missing Key {0}".format(e))
-        
+        QUERY_FILE - The full path to the queries config file"""
+        print(MSG)
+        print("ERROR: Missing Environment Variable %s", exception)
         sys.exit(1)
 
-    configure_logging(log_level)
-    logger = logging.getLogger()
-    conf_path = configuration_file
+    logger = configure_logging(log_level)
+    conf_path = CONFIG_FILE
 
     with open(conf_path, 'r') as yamlfile:
         configuration = yaml.safe_load(yamlfile)
 
     try:
-        collector = 'customCollectors'
-        if (collector in configuration):
-                customConf = configuration[collector]
-                if 'servicelevelindicators' in customConf:
-                    for sli in customConf['servicelevelindicators']:
-                        cd = getCollectorCustomDimensions(sli)
-                        REGISTRY.register(AppInsightsCustomCollector(appid, key, servicelevelindicators=sli, customdimensions=cd))
-        
-    except Exception as e:
-        logger.error('Error creating collector: {0}'.format(str(e)))
+        COLLECTOR = 'customCollectors'
+        if COLLECTOR in configuration:
+            customConf = configuration[COLLECTOR]
+            if 'servicelevelindicators' in customConf:
+                for sli in customConf['servicelevelindicators']:
+                    cd = get_custom_dimensions(sli)
+                    REGISTRY.register(AppInsightsCustomCollector(
+                        appid, key, servicelevelindicators=sli,
+                        customdimensions=cd))
+
+    except Exception as exception:
+        logger.error('Error creating collector: %s', str(exception))
         sys.exit(2)
 
     start_http_server(8080)
-    
+
     while True:
         time.sleep(60)
