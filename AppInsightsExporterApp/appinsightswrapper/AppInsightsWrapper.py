@@ -30,7 +30,7 @@ class AppInsightsWrapper():
         query_string = '{0} | {1}'.format(schema, time_string)
         if query:
             query_string = '{0} | {1}'.format(query_string, query)
-        summarize = 'summarize count()'
+        summarize = 'summarize sum(itemCount)'
         dimensions = []
         if customdimensions:
             summarize = '{0} {1}'.format(summarize, "by")
@@ -41,7 +41,7 @@ class AppInsightsWrapper():
             query_string, summarize, ",".join(dimensions)).strip()
         return query_string
 
-    def _query_api(self, query):
+    def query_api(self, query):
         query_url = self.url_base + query
 
         retry_count = 0
@@ -75,11 +75,14 @@ class AppInsightsWrapper():
         return json_response
 
     def count(self, schema, query_string, time_range=None, customdimensions=None):
-        summarize_column = ",".join(customdimensions)
+        if customdimensions:
+            summarize_column = ",".join(customdimensions)
+        else:
+            summarize_column = ""
         query_string = self.build_summary_count_query(
             schema, query_string, time_range, customdimensions)
         self.logger.info('Count with query: %s', query_string)
-        result = self._query_api(query_string)
+        result = self.query_api(query_string)
         if not result:
             return False
         try:
