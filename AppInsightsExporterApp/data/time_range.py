@@ -30,4 +30,4 @@ class AppInsightsTimeRange():
         before = false_now - date
         now_str = false_now.strftime("%Y-%m-%dT%H:%M:%SZ")
         before_str = before.strftime("%Y-%m-%dT%H:%M:%SZ")
-        return "where timestamp > datetime({0}) | where timestamp < datetime({1}) | order by timestamp desc".format(before_str, now_str)
+        return "where timestamp > datetime({0}) | where timestamp < datetime({1})".format(before_str, now_str)
