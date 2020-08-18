@@ -1,13 +1,15 @@
 customCollectors:
     servicelevelindicators:
-        - query: 'where resultCode startswith "2" or resultCode startswith "3"'
+        - query: ''
+          metrictype: counter
           schema: 'requests'
-          name: 'requests_success_total'
+          name: 'requests_total'
           customdimensions:
             - 'Kubernetes.ReplicaSet.Name'
             - 'AspNetCoreEnvironment'
             - 'Kubernetes.Deployment.Name'
-        - query: 'where resultCode startswith "4" or resultCode startswith "5"'
+        - query: 'where resultCode startswith "5"'
+          metrictype: counter
           schema: 'requests'
           name: 'requests_failed_total'
           customdimensions:

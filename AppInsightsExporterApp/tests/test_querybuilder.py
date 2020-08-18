@@ -2,6 +2,7 @@ import datetime
 import unittest
 from unittest import mock
 from appinsightswrapper.AppInsightsWrapper import AppInsightsWrapper
+from collector.app_insights_collector import AppInsightsCollector
 from data.metric import PromMetric
 
 class TestQueries(unittest.TestCase):
@@ -10,7 +11,7 @@ class TestQueries(unittest.TestCase):
         testdt = datetime.datetime(2020, 1, 1, 12, 30, 30, 123456)
         with mock.patch('datetime.datetime') as dt_mock:
             dt_mock.utcnow.return_value = testdt
-            client = AppInsightsWrapper("appid", "appkey", dt_mock)
+            client = AppInsightsWrapper("appid", "appkey", dt_mock, 60)
             actual = client.build_summary_count_query("requests", '')
             expected = "requests | where timestamp > datetime(2020-01-01T12:24:30Z) | where timestamp < datetime(2020-01-01T12:25:30Z) | summarize sum(itemCount)"
             self.assertEqual(actual, expected)
@@ -19,7 +20,7 @@ class TestQueries(unittest.TestCase):
         testdt = datetime.datetime(2020, 1, 1, 12, 30, 30, 123456)
         with mock.patch('datetime.datetime') as dt_mock:
             dt_mock.utcnow.return_value = testdt
-            client = AppInsightsWrapper("appid", "appkey", dt_mock)
+            client = AppInsightsWrapper("appid", "appkey", dt_mock, 60)
             actual = client.build_summary_count_query(
                 "requests", 'where resultCode startswith "5"')
             expected = 'requests | where timestamp > datetime(2020-01-01T12:24:30Z) | where timestamp < datetime(2020-01-01T12:25:30Z) | where resultCode startswith "5" | summarize sum(itemCount)'
@@ -29,7 +30,7 @@ class TestQueries(unittest.TestCase):
         testdt = datetime.datetime(2020, 1, 1, 12, 30, 30, 123456)
         with mock.patch('datetime.datetime') as dt_mock:
             dt_mock.utcnow.return_value = testdt
-            client = AppInsightsWrapper("appid", "appkey", dt_mock)
+            client = AppInsightsWrapper("appid", "appkey", dt_mock, 60)
             actual = client.build_summary_count_query(
                 "requests", 'where resultCode startswith "5"', customdimensions=["Environment"])
             expected = 'requests | where timestamp > datetime(2020-01-01T12:24:30Z) | where timestamp < datetime(2020-01-01T12:25:30Z) | where resultCode startswith "5" | summarize sum(itemCount) by tostring(customDimensions["Environment"])'
@@ -42,10 +43,49 @@ class TestQueries(unittest.TestCase):
         self.assertEqual(actual, expected)
 
     def test_no_customdimensions(self):
-        wrapper = AppInsightsWrapper('appid', 'key', datetime.datetime(2020, 1, 1, 12, 30, 30, 123456))
+        wrapper = AppInsightsWrapper('appid', 'key', datetime.datetime(2020, 1, 1, 12, 30, 30, 123456), 60)
         wrapper.query_api = self.fake_api
         actual = wrapper.count('trader_browserTimings_homepage', 'where name == "Home-Page"')
         self.assertTrue(len(actual) > 0)
+
+    def test_counter(self):
+        testdt = datetime.datetime(2020, 1, 1, 12, 30, 30, 123456)
+        customdimensions = ['Environment', 'Deployment']
+        collector = AppInsightsCollector("appid", "appkey", customdimensions, 60)
+        counterresults = PromMetric("my.label1, my.label2", 100, "foo, bar")
+        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt)
+        self.assertEqual(collector.CounterValues['abc3115a23f2321a965fcbbadf2cb5936ad']['value'], result.samples[0].value)
+        self.assertEqual(100, result.samples[0].value)
+
+    def test_counter_does_increment_after_60_sec(self):
+        testdt = datetime.datetime(2020, 1, 1, 12, 30, 30, 123456)
+        customdimensions = ['Environment', 'Deployment']
+        collector = AppInsightsCollector("appid", "appkey", customdimensions, 60)
+        counterresults = PromMetric("my.label1, my.label2", 100, "foo, bar")
+        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt)
+        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt + datetime.timedelta(seconds=120))
+        self.assertEqual(collector.CounterValues['abc3115a23f2321a965fcbbadf2cb5936ad']['value'], result.samples[0].value)
+        self.assertEqual(200, result.samples[0].value)
+
+    def test_counter_not_increment_before_60_sec(self):
+        testdt = datetime.datetime(2020, 1, 1, 12, 30, 30, 123456)
+        customdimensions = ['Environment', 'Deployment']
+        collector = AppInsightsCollector("appid", "appkey", customdimensions, 60)
+        counterresults = PromMetric("my.label1, my.label2", 100, "foo, bar")
+        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt)
+        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt + datetime.timedelta(seconds=40))
+        self.assertEqual(collector.CounterValues['abc3115a23f2321a965fcbbadf2cb5936ad']['value'], result.samples[0].value)
+        self.assertEqual(100, result.samples[0].value)
+
+    def test_counter_does_increment_at_100_sec(self):
+        testdt = datetime.datetime(2020, 1, 1, 12, 30, 30, 123456)
+        customdimensions = ['Environment', 'Deployment']
+        collector = AppInsightsCollector("appid", "appkey", customdimensions, 60)
+        counterresults = PromMetric("my.label1, my.label2", 100, "foo, bar")
+        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt)
+        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt + datetime.timedelta(seconds=100))
+        self.assertEqual(collector.CounterValues['abc3115a23f2321a965fcbbadf2cb5936ad']['value'], result.samples[0].value)
+        self.assertEqual(200, result.samples[0].value)
 
     def fake_api(self, query):
         print(self, query)

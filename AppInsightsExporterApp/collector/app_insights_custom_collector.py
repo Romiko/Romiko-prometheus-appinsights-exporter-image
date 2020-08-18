@@ -1,5 +1,5 @@
+from datetime import datetime
 from collector.app_insights_collector import AppInsightsCollector
-
 
 class AppInsightsCustomCollector(AppInsightsCollector):
     """[summary]
@@ -8,7 +8,7 @@ class AppInsightsCustomCollector(AppInsightsCollector):
         AppInsightsCollector ([type]): Create SLI metrics
     """
 
-    def __init__(self, application_id, api_key, servicelevelindicators=None, customdimensions=None):
+    def __init__(self, application_id, api_key, servicelevelindicators=None, customdimensions=None, scrape_interval_seconds=60):
         """[summary]
 
         Args:
@@ -17,7 +17,7 @@ class AppInsightsCustomCollector(AppInsightsCollector):
             servicelevelindicators ([type], optional): SLI query config. Defaults to None.
             customdimensions ([type], optional): Labels from custom dimensions in appinsights. Defaults to None.
         """
-        AppInsightsCollector.__init__(self, application_id, api_key)
+        AppInsightsCollector.__init__(self, application_id, api_key, scrape_interval_seconds)
         self.servicelevelindicators = servicelevelindicators
         self.customdimensions = customdimensions
 
@@ -28,13 +28,20 @@ class AppInsightsCustomCollector(AppInsightsCollector):
             [type]: Create a gauge metric
         """
         if self.servicelevelindicators:
+            collectiontimestamp = datetime.now()
             mname = self.servicelevelindicators['name']
             mquery = self.servicelevelindicators['query']
             schema = self.servicelevelindicators['schema']
-            gauge_metrics = self.client.count(
+            metrictype = self.servicelevelindicators['metrictype']
+            metrics = self.client.count(
                 schema, mquery, customdimensions=self.customdimensions)
-            if gauge_metrics:
-                for gauge in gauge_metrics:
-                    yield self.create_gauge_metric(mname, mquery, gauge)
+            if metrics:
+                for metric in metrics:
+                    if metrictype == 'counter':
+                        yield self.create_counter_metric(mname, mquery, metric, collectiontimestamp)
+                    elif metrictype == 'gauge':
+                        yield self.create_gauge_metric(mname, mquery, metric)
+                    else:
+                        raise ValueError('metrictype not supported %s' % metrictype)
         else:
             self.logger.error("No servicelevelindicator were provided.")

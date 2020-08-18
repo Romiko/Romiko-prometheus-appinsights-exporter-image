@@ -5,13 +5,15 @@ import time
 import yaml
 import pyfiglet
 import json_log_formatter
+import requests
 
 from prometheus_client import start_http_server
 from prometheus_client.core import REGISTRY
 from collector.app_insights_custom_collector import AppInsightsCustomCollector
 
 CONFIG_FILE_QUERY_PATH = "/config/queries.yaml"
-
+PORT = 8080
+SCRAPE_INTERVAL_SECONDS = 60
 
 def configure_logging(log_conf_level):
     """[summary]
@@ -88,13 +90,15 @@ if __name__ == "__main__":
                     cd = get_custom_dimensions(sli)
                     REGISTRY.register(AppInsightsCustomCollector(
                         appid, key, servicelevelindicators=sli,
-                        customdimensions=cd))
+                        customdimensions=cd, scrape_interval_seconds=SCRAPE_INTERVAL_SECONDS))
 
     except Exception as exception:
         logger.error('Error creating collector: %s', str(exception))
         sys.exit(2)
 
-    start_http_server(8080)
+    start_http_server(PORT)
 
     while True:
-        time.sleep(60)
+        time.sleep(SCRAPE_INTERVAL_SECONDS)
+        # Call itself every 60 seconds. This is to ensure counter metric types are updated
+        r = requests.get('http://localhost:%s' % PORT)
