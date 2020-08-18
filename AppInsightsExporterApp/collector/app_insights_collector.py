@@ -13,7 +13,7 @@ class AppInsightsCollector():
 
     CounterValues = {}
 
-    def __init__(self, application_id, api_key, customdimensions=[], scrape_interval_seconds=60):
+    def __init__(self, application_id, api_key, customdimensions=[], sample_rate_seconds=60):
         """[summary]
 
         Args:
@@ -24,7 +24,7 @@ class AppInsightsCollector():
         self.application_id = application_id
         self.api_key = api_key
         self.client = AppInsightsWrapper(
-            application_id, api_key, datetime.datetime, scrape_interval_seconds)
+            application_id, api_key, datetime.datetime, sample_rate_seconds)
         self.logger = logging.getLogger()
         self.customdimensions = customdimensions
 
@@ -47,10 +47,9 @@ class AppInsightsCollector():
                           mname, gauge_results.value, gauge_results.labelvalues)
         return gauge
 
-    def create_counter_metric(self, metric_name, description, counter_results, collectiontimestamp, scrape_interval_seconds):
+    def create_counter_metric(self, metric_name, description, counter_results, collectiontimestamp, sample_rate_seconds):
         """
-        Ensure prometheus scrapes every SCRAPE_INTERVAL_SECONDS
-        This will ensure the counter increments correctly on aggregated data.
+        The SAMPLE_RATE_SECONDS will ensure the counter increments correctly.
 
         Args:
             metric_name ([type]): Prometheus metric name
@@ -69,7 +68,7 @@ class AppInsightsCollector():
         if key in self.CounterValues:
             value = self.CounterValues[key]['value']
             lastcollecteddate = self.CounterValues[key]['timestamp']
-            if (collectiontimestamp-lastcollecteddate).total_seconds() >= scrape_interval_seconds:
+            if (collectiontimestamp-lastcollecteddate).total_seconds() >= sample_rate_seconds:
                 value = counter_results.value + self.CounterValues[key]['value']
                 self.CounterValues.update({key :{'timestamp': collectiontimestamp, 'value': value}})
         else:

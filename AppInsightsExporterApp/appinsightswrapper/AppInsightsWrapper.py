@@ -9,14 +9,14 @@ API_URL = "https://api.applicationinsights.io/v1/apps/{0}/query?query="
 
 class AppInsightsWrapper():
 
-    def __init__(self, application_id, api_key, date, scrape_interval_seconds):
+    def __init__(self, application_id, api_key, date, sample_rate_seconds):
         self.application_id = application_id
         self.api_key = api_key
         self.url_base = API_URL.format(application_id)
         self.headers = {'Content-Type': 'application/json',
                         'X-Api-Key': '{0}'.format(api_key)}
         self.logger = logging.getLogger()
-        self.exporter_interval = AppInsightsTimeRange(0, 0, scrape_interval_seconds)
+        self.exporter_interval = AppInsightsTimeRange(0, 0, sample_rate_seconds)
         self.date = date
 
     def build_summary_count_query(self, schema, query, time_range=None, customdimensions=None):

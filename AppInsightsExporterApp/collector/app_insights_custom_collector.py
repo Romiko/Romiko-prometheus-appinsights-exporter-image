@@ -8,7 +8,7 @@ class AppInsightsCustomCollector(AppInsightsCollector):
         AppInsightsCollector ([type]): Create SLI metrics
     """
 
-    def __init__(self, application_id, api_key, servicelevelindicators=None, customdimensions=None, scrape_interval_seconds=60):
+    def __init__(self, application_id, api_key, servicelevelindicators=None, customdimensions=None, sample_rate_seconds=60):
         """[summary]
 
         Args:
@@ -17,10 +17,10 @@ class AppInsightsCustomCollector(AppInsightsCollector):
             servicelevelindicators ([type], optional): SLI query config. Defaults to None.
             customdimensions ([type], optional): Labels from custom dimensions in appinsights. Defaults to None.
         """
-        AppInsightsCollector.__init__(self, application_id, api_key, scrape_interval_seconds)
+        AppInsightsCollector.__init__(self, application_id, api_key, sample_rate_seconds)
         self.servicelevelindicators = servicelevelindicators
         self.customdimensions = customdimensions
-        self.scrape_interval_seconds = scrape_interval_seconds
+        self.sample_rate_seconds = sample_rate_seconds
 
     def collect(self):
         """[summary]
@@ -30,7 +30,7 @@ class AppInsightsCustomCollector(AppInsightsCollector):
         """
         if self.servicelevelindicators:
             collectiontimestamp = datetime.now()
-            scrape_interval_seconds = self.scrape_interval_seconds
+            sample_rate_seconds = self.sample_rate_seconds
             mname = self.servicelevelindicators['name']
             mquery = self.servicelevelindicators['query']
             schema = self.servicelevelindicators['schema']
@@ -40,7 +40,7 @@ class AppInsightsCustomCollector(AppInsightsCollector):
             if metrics:
                 for metric in metrics:
                     if metrictype == 'counter':
-                        yield self.create_counter_metric(mname, mquery, metric, collectiontimestamp, scrape_interval_seconds)
+                        yield self.create_counter_metric(mname, mquery, metric, collectiontimestamp, sample_rate_seconds)
                     elif metrictype == 'gauge':
                         yield self.create_gauge_metric(mname, mquery, metric)
                     else:

@@ -13,7 +13,7 @@ from collector.app_insights_custom_collector import AppInsightsCustomCollector
 
 CONFIG_FILE_QUERY_PATH = "/config/queries.yaml"
 PORT = 8080
-SCRAPE_INTERVAL_SECONDS = 60
+SAMPLE_RATE_SECONDS = 60
 
 def configure_logging(log_conf_level):
     """[summary]
@@ -90,7 +90,7 @@ if __name__ == "__main__":
                     cd = get_custom_dimensions(sli)
                     REGISTRY.register(AppInsightsCustomCollector(
                         appid, key, servicelevelindicators=sli,
-                        customdimensions=cd, scrape_interval_seconds=SCRAPE_INTERVAL_SECONDS))
+                        customdimensions=cd, sample_rate_seconds=SAMPLE_RATE_SECONDS))
 
     except Exception as exception:
         logger.error('Error creating collector: %s', str(exception))
@@ -99,6 +99,6 @@ if __name__ == "__main__":
     start_http_server(PORT)
 
     while True:
-        time.sleep(SCRAPE_INTERVAL_SECONDS)
-        # Call itself every 60 seconds. This is to ensure counter metric types are updated
+        time.sleep(SAMPLE_RATE_SECONDS)
+        # SAMPLE_RATE_SECONDS ensures counter metrics are regularly incremented.
         r = requests.get('http://localhost:%s' % PORT)
