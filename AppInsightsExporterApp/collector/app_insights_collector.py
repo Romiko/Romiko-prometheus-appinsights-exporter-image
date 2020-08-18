@@ -47,7 +47,7 @@ class AppInsightsCollector():
                           mname, gauge_results.value, gauge_results.labelvalues)
         return gauge
 
-    def create_counter_metric(self, metric_name, description, counter_results, collectiontimestamp):
+    def create_counter_metric(self, metric_name, description, counter_results, collectiontimestamp, scrape_interval_seconds):
         """
         Ensure prometheus scrapes every SCRAPE_INTERVAL_SECONDS
         This will ensure the counter increments correctly on aggregated data.
@@ -69,7 +69,7 @@ class AppInsightsCollector():
         if key in self.CounterValues:
             value = self.CounterValues[key]['value']
             lastcollecteddate = self.CounterValues[key]['timestamp']
-            if (collectiontimestamp-lastcollecteddate).total_seconds() >= 60:
+            if (collectiontimestamp-lastcollecteddate).total_seconds() >= scrape_interval_seconds:
                 value = counter_results.value + self.CounterValues[key]['value']
                 self.CounterValues.update({key :{'timestamp': collectiontimestamp, 'value': value}})
         else:

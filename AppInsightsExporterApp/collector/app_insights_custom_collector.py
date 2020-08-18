@@ -20,6 +20,7 @@ class AppInsightsCustomCollector(AppInsightsCollector):
         AppInsightsCollector.__init__(self, application_id, api_key, scrape_interval_seconds)
         self.servicelevelindicators = servicelevelindicators
         self.customdimensions = customdimensions
+        self.scrape_interval_seconds = scrape_interval_seconds
 
     def collect(self):
         """[summary]
@@ -29,6 +30,7 @@ class AppInsightsCustomCollector(AppInsightsCollector):
         """
         if self.servicelevelindicators:
             collectiontimestamp = datetime.now()
+            scrape_interval_seconds = self.scrape_interval_seconds
             mname = self.servicelevelindicators['name']
             mquery = self.servicelevelindicators['query']
             schema = self.servicelevelindicators['schema']
@@ -38,7 +40,7 @@ class AppInsightsCustomCollector(AppInsightsCollector):
             if metrics:
                 for metric in metrics:
                     if metrictype == 'counter':
-                        yield self.create_counter_metric(mname, mquery, metric, collectiontimestamp)
+                        yield self.create_counter_metric(mname, mquery, metric, collectiontimestamp, scrape_interval_seconds)
                     elif metrictype == 'gauge':
                         yield self.create_gauge_metric(mname, mquery, metric)
                     else:

@@ -49,41 +49,36 @@ class TestQueries(unittest.TestCase):
         self.assertTrue(len(actual) > 0)
 
     def test_counter(self):
+        scrapeinterval = 60
         testdt = datetime.datetime(2020, 1, 1, 12, 30, 30, 123456)
         customdimensions = ['Environment', 'Deployment']
         collector = AppInsightsCollector("appid", "appkey", customdimensions, 60)
         counterresults = PromMetric("my.label1, my.label2", 100, "foo, bar")
-        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt)
+        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt, scrapeinterval)
+        self.assertEqual(collector.CounterValues['abc3115a23f2321a965fcbbadf2cb5936ad']['value'], result.samples[0].value)
+        self.assertEqual(100, result.samples[0].value)
+
+    def test_counter_not_increment_before_60_sec(self):
+        scrapeinterval = 60
+        testdt = datetime.datetime(2020, 1, 1, 12, 30, 30, 123456)
+        customdimensions = ['Environment', 'Deployment']
+        collector = AppInsightsCollector("appid", "appkey", customdimensions, scrapeinterval)
+        collector.CounterValues = {}
+        counterresults = PromMetric("my.label1, my.label2", 100, "foo, bar")
+        collector.create_counter_metric("abc", "my metric", counterresults, testdt, scrapeinterval)
+        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt + datetime.timedelta(seconds=40), scrapeinterval)
         self.assertEqual(collector.CounterValues['abc3115a23f2321a965fcbbadf2cb5936ad']['value'], result.samples[0].value)
         self.assertEqual(100, result.samples[0].value)
 
     def test_counter_does_increment_after_60_sec(self):
+        scrapeinterval = 60
         testdt = datetime.datetime(2020, 1, 1, 12, 30, 30, 123456)
         customdimensions = ['Environment', 'Deployment']
-        collector = AppInsightsCollector("appid", "appkey", customdimensions, 60)
+        collector = AppInsightsCollector("appid", "appkey", customdimensions, scrapeinterval)
+        collector.CounterValues = {}
         counterresults = PromMetric("my.label1, my.label2", 100, "foo, bar")
-        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt)
-        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt + datetime.timedelta(seconds=120))
-        self.assertEqual(collector.CounterValues['abc3115a23f2321a965fcbbadf2cb5936ad']['value'], result.samples[0].value)
-        self.assertEqual(200, result.samples[0].value)
-
-    def test_counter_not_increment_before_60_sec(self):
-        testdt = datetime.datetime(2020, 1, 1, 12, 30, 30, 123456)
-        customdimensions = ['Environment', 'Deployment']
-        collector = AppInsightsCollector("appid", "appkey", customdimensions, 60)
-        counterresults = PromMetric("my.label1, my.label2", 100, "foo, bar")
-        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt)
-        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt + datetime.timedelta(seconds=40))
-        self.assertEqual(collector.CounterValues['abc3115a23f2321a965fcbbadf2cb5936ad']['value'], result.samples[0].value)
-        self.assertEqual(100, result.samples[0].value)
-
-    def test_counter_does_increment_at_100_sec(self):
-        testdt = datetime.datetime(2020, 1, 1, 12, 30, 30, 123456)
-        customdimensions = ['Environment', 'Deployment']
-        collector = AppInsightsCollector("appid", "appkey", customdimensions, 60)
-        counterresults = PromMetric("my.label1, my.label2", 100, "foo, bar")
-        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt)
-        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt + datetime.timedelta(seconds=100))
+        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt, scrapeinterval)
+        result = collector.create_counter_metric("abc", "my metric", counterresults, testdt + datetime.timedelta(seconds=120), scrapeinterval)
         self.assertEqual(collector.CounterValues['abc3115a23f2321a965fcbbadf2cb5936ad']['value'], result.samples[0].value)
         self.assertEqual(200, result.samples[0].value)
 
